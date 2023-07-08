@@ -11,10 +11,11 @@ resource "azurerm_kubernetes_cluster" "juno" {
   sku_tier                  = var.sku_tier
 
   default_node_pool {
-    name       = "juno"
-    node_count = 1
-    max_count  = 4
-    vm_size    = "Standard_D2_v2"
+    name                = "juno"
+    enable_auto_scaling = true
+    vm_size             = "Standard_D2_v2"
+    min_count           = 1
+    max_count           = 4
   }
 
   identity {
