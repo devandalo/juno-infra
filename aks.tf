@@ -15,6 +15,10 @@ resource "azurerm_kubernetes_cluster" "juno" {
     max_count  = 4
     vm_size    = "Standard_D2_v2"
   }
+
+  identity {
+    type = "SystemAssigned"
+  }
 }
 
 
