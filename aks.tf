@@ -9,7 +9,7 @@ resource "azurerm_kubernetes_cluster" "juno" {
   local_account_disabled    = true
   tags                      = local.tags
 
-  default_node_pool = {
+  default_node_pool {
     name       = "juno"
     node_count = 1
     max_count  = 4
