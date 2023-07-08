@@ -9,8 +9,8 @@ on:
         type: boolean
         default: false
 
-env:
-  TF_LOG: INFO
+#env:
+#TF_LOG: INFO
 
 permissions:
   id-token: write
