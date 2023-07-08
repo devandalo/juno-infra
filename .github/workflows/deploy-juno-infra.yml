@@ -1,0 +1,137 @@
+name: "🚀 Deploy Juno Infra"
+
+on:
+  workflow_dispatch:
+    inputs:
+      destroy:
+        description: "Destroy tf-composition?"
+        required: true
+        type: boolean
+        default: false
+
+env:
+  TF_LOG: INFO
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  tf-plan:
+    environment: tf-plan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Setup TFLint
+        uses: terraform-linters/setup-tflint@v3.0.0
+
+      - name: "Az CLI login"
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Terraform Init
+        id: init
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_USE_OIDC: true
+        run: terraform init
+
+      - name: Terraform format
+        id: fmt
+        run: terraform fmt -check
+
+      - name: Terraform validate
+        id: validate
+        if: success() || failure()
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        run: terraform validate -no-color
+
+      - name: Terraform lint init
+        run: tflint --init
+
+      - name: Terraform lint run
+        run: tflint
+
+      - name: Check destroy arg
+        id: destroy_arg
+        env:
+          DESTROY: ${{ inputs.destroy }}
+        run: |
+          if $DESTROY
+          then
+            echo "val=-destroy" >> $GITHUB_OUTPUT
+          else
+            echo "val= " >> $GITHUB_OUTPUT
+          fi
+
+      - name: Terraform plan
+        id: plan
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_USE_OIDC: true
+          DESTROY: ${{ steps.destroy_arg.outputs.val }}
+        run: terraform plan $DESTROY -var-file="lab.tfvars" --out=out.tfplan
+
+      - name: Upload the tf plan
+        uses: actions/upload-artifact@v3
+        with:
+          name: tf-plan
+          path: ./out.tfplan
+
+  tf-apply:
+    needs: tf-plan
+    environment: tf-apply
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: "Az CLI login"
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Terraform Init
+        id: init
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_USE_OIDC: true
+        run: terraform init
+
+      - name: Download the tf plan
+        uses: actions/download-artifact@v3.0.2
+        with:
+          name: tf-plan
+          path: ./
+
+      - name: Terraform apply
+        id: apply
+        env:
+          ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          ARM_USE_OIDC: true
+        run: terraform apply -auto-approve out.tfplan
