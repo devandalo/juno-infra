@@ -8,11 +8,13 @@ resource "azurerm_kubernetes_cluster" "example" {
   workload_identity_enabled = true
   local_account_disabled    = true
   tags                      = local.tags
+
+  default_pool = {
+    name       = "juno"
+    node_count = 1
+    max_count  = 4
+    vm_size    = "Standard_D2_v2"
+  }
 }
 
-default_pool = {
-  name       = "juno"
-  node_count = 1
-  max_count  = 4
-  vm_size    = "Standard_D2_v2"
-}
+
