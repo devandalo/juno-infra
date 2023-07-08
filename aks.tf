@@ -8,6 +8,7 @@ resource "azurerm_kubernetes_cluster" "juno" {
   workload_identity_enabled = true
   local_account_disabled    = true
   tags                      = local.tags
+  sku_tier                  = var.sku_tier
 
   default_node_pool {
     name       = "juno"
