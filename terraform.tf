@@ -9,10 +9,10 @@ terraform {
   }
 
   backend "azurerm" {
-    resource_group_name  = "hb-tfstate-rg"
-    storage_account_name = "hbtfstatestacc"
-    container_name       = "hb-tfstate-container"
-    key                  = "terraform.tfstate"
+    resource_group_name  = "juno-tfstate-rg"
+    storage_account_name = "junotfstateacc"
+    container_name       = "juno-tfstate-container"
+    key                  = "juno-infra.tfstate"
   }
 }
 
