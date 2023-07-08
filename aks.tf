@@ -1,4 +1,4 @@
-resource "azurerm_kubernetes_cluster" "example" {
+resource "azurerm_kubernetes_cluster" "juno" {
   name                      = "${var.project}-${var.env}-aks"
   location                  = azurerm_resource_group.juno.location
   resource_group_name       = azurerm_resource_group.juno.name
@@ -9,7 +9,7 @@ resource "azurerm_kubernetes_cluster" "example" {
   local_account_disabled    = true
   tags                      = local.tags
 
-  default_pool = {
+  default_node_pool = {
     name       = "juno"
     node_count = 1
     max_count  = 4
